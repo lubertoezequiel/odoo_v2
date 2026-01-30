@@ -1,0 +1,43 @@
+
+
+services:
+  db:
+    image: postgres:15
+    container_name: odoo-db
+    environment:
+      POSTGRES_DB: odoo
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odoo"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  odoo:
+    build: .
+    image: odoo-dev:19
+    container_name: odoo
+    ports:
+      - "8069:8069"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./odoo-src:/opt/odoo           # código editable
+      - ./extra-addons:/mnt/extra-addons
+      - odoo-data:/var/lib/odoo        # 🔴 VOLUMEN, NO bind
+      - ./odoo.conf:/etc/odoo/odoo.conf
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: odoo
+      DB_PASSWORD: odoo
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  odoo-data:
